@@ -40,7 +40,7 @@
           <commandLine>-fopenmp</commandLine>
         </ccTool>
         <linkerTool>
-          <commandLine>-llpsolve55 -lopencv_core -lopencv_highgui</commandLine>
+          <commandLine>-llpsolve55 -lglpk -lopencv_core -lopencv_highgui</commandLine>
         </linkerTool>
       </compileType>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
