@@ -40,7 +40,6 @@ using namespace std;
  ************************************/
 vector< vector<int> > GenerateGraph ( int );
 void GraphDisplay ( vector< vector<int> > );
-void using_glpk ( vector< vector<int> > );
 void using_lpsolve ( vector< vector<int> > );
 void GraphOutput ( vector< vector<int> > );
 
@@ -69,130 +68,9 @@ int main ( int argc, char* argv[] )
     
     vector< vector<int> > g = GenerateGraph(Ncol);    
     
-    cout << "-----------------------glpk" << endl;
-    using_glpk(g);
-    cout << "-----------------------lpsolve" << endl;
     using_lpsolve(g);
 
     GraphOutput(g);       
-}
-/*******************************************************************************
-* Function     : 
-* Description  : 
-* Arguments    : 
-* Returns      : 
-* Remarks      : 
-********************************************************************************/
-void using_glpk ( vector< vector<int> > g )
-{
-    glp_prob* prob = glp_create_prob();
-    glp_set_obj_dir(prob, GLP_MIN);     
-    int num_vertices = g.size();
-    int max_colors = g.size();
-//    for (int i = 0; i < num_vertices; ++i)
-//        max_colors = std::max(int(g[i].size()) + 1, max_colors);
-    
-    int y = glp_add_cols(prob, 1);
-    glp_set_col_bnds(prob, y, GLP_DB, 1, max_colors); // DB = Double Bound
-    glp_set_obj_coef(prob, y, 1.);
-    glp_set_col_kind(prob, y, GLP_IV); // IV = Integer Variable
-    
-    std::vector<std::vector<int> > x(num_vertices, std::vector<int>(max_colors));
-    for (int v = 0; v < num_vertices; ++v) 
-    {
-        for (int k = 0; k < max_colors; ++k)
-        {
-            x[v][k] = glp_add_cols(prob, 1);
-            glp_set_col_kind(prob, x[v][k], GLP_BV); // BV = Binary Variable
-        }    
-    }
-    
-    std::vector<int> rows(1, 0);
-    std::vector<int> cols(1, 0);
-    std::vector<double> coeffs(1, 0.);
-    // One vertex must have exactly one color:
-    // for each vertex v, sum(x(v, k)) == 1
-    for (int v = 0; v < num_vertices; ++v)
-    {
-        int row_idx = glp_add_rows(prob, 1);
-        glp_set_row_bnds(prob, row_idx, GLP_FX, 1, 1); // FX: FiXed bound
-        for (int k = 0; k < max_colors; ++k)
-        {
-            rows.push_back(row_idx); 
-            coeffs.push_back(1);
-            cols.push_back(x[v][k]);
-        }
-    }      
-
-    // We ensure we use y colors max:
-    // for each vertex v and for each color c,                
-    //    y >= (k + 1) * x(v, k)
-    for (int v = 0; v < num_vertices; ++v)                    
-    {
-        for (int k = 0; k < max_colors; ++k)
-        {
-            int row_idx = glp_add_rows(prob, 1);
-            glp_set_row_bnds(prob, row_idx, GLP_LO, 0, -1); // LO = LOwer bound
-
-            rows.push_back(row_idx);
-            coeffs.push_back(1);
-            cols.push_back(y);                      
-
-            rows.push_back(row_idx);
-            coeffs.push_back(- k - 1);
-            cols.push_back(x[v][k]);
-        }
-    }  
-    
-    // Adjacent vertices cannot have the same color:        
-    // for each edge (src, dst) and for each color k,                         
-    //    x(src, k) + x(dst, k) <= 1     
-    
-    for (int src = 0; src < num_vertices; ++src)
-    {
-        const std::vector<int>& succs = g[src];
-        for (int s = 0; s < succs.size(); ++s)
-        {
-            int dst = succs[s];
-            // Ensure we don't add both (u, v) and (v, u)                                    
-            if (src > dst)
-            {
-                for (int k = 0; k < max_colors; ++k)
-                {
-                    int row_idx = glp_add_rows(prob, 1);
-                    glp_set_row_bnds(prob, row_idx, GLP_UP, -1, 1); // UP = UPper bound
-
-                    rows.push_back(row_idx);
-                    coeffs.push_back(1);
-                    cols.push_back(x[src][k]);
-
-                    rows.push_back(row_idx);
-                    coeffs.push_back(1);
-                    cols.push_back(x[dst][k]);
-                    
-                    //cout << x[src][k] << " " << x[dst][k] << endl;
-                    //getchar();
-                }
-            }
-        }
-    }
-    
-    glp_load_matrix(prob, rows.size() - 1, &rows[0], &cols[0], &coeffs[0]);
-    glp_iocp parm;
-    glp_init_iocp(&parm);
-    parm.presolve = GLP_ON;
-    glp_intopt(prob, &parm);
-        
-    double solution = glp_mip_obj_val(prob);
-    std::cout << "Colors: " << solution << std::endl;
-    for (int i = 0; i < num_vertices; ++i)
-    {
-        std::cout << i << ": ";
-        for (int j = 0; j < max_colors; ++j)
-            std::cout << glp_mip_col_val(prob, x[i][j]) << " ";
-        std::cout << std::endl;
-    }
-        
 }
 /*******************************************************************************
 * Function     : 
@@ -320,7 +198,7 @@ void using_lpsolve ( vector< vector<int> > g )
     
     write_LP(lp, stdout);
     
-    //set_verbose(lp, IMPORTANT);
+    set_verbose(lp, IMPORTANT);
 
     set_minim(lp);
     
@@ -336,9 +214,7 @@ void using_lpsolve ( vector< vector<int> > g )
         }
         
     }
-    delete_lp(lp);
- 
-    //GraphDisplay(g);    
+    delete_lp(lp); 
 }
 /*******************************************************************************
 * Function     : 
