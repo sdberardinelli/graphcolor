@@ -26,10 +26,10 @@
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" 4</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" 3</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" 5</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" 3</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" 5</runcommand>
+        <runcommand>"${OUTPUT_PATH}" 3</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>
