@@ -109,13 +109,14 @@ void using_lpsolve ( vector< vector<int> > g )
     set_add_rowmode(lp, TRUE);      
     
     {   // x_v1+x_v2+...+x_vK = 1, v in V
-        int colno[Ncol*Mcol*Mcol];
-        double row[Ncol*Mcol*Mcol];
-        int idx = 0;     
+   
         for ( int i = 0; i < Ncol; i++ )
         {   
+            int colno[Mcol+1];
+            double row[Mcol+1];
+            int idx = 0;              
             colno[idx] = idx+1;
-            row[idx] = 0;
+            row[idx] = -Mcol;
             idx++;               
             for ( int j = 0; j < Mcol; j++ )
             {
@@ -123,9 +124,10 @@ void using_lpsolve ( vector< vector<int> > g )
                 row[idx] = 1;
                 idx++;
             }
+            add_constraintex(lp, idx, row, colno, EQ, 1);
         }    
         
-        add_constraintex(lp, idx, row, colno, EQ, 1);
+        
     } 
     
    {   // y >= k*x_vk, v in V, k=1...K
@@ -135,7 +137,7 @@ void using_lpsolve ( vector< vector<int> > g )
         for ( int i = 0; i < Ncol; i++ )
         {    
             colno[idx] = idx+1;
-            row[idx] = -1;
+            row[idx] = -Mcol;
             idx++;              
             for ( int j = 0; j < Mcol; j++ )
             {
