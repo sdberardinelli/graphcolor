@@ -103,50 +103,71 @@ void using_lpsolve ( vector< vector<int> > g )
         rowno[idx] = idx+1;
         col[idx] = Mcol;                
         idx++; 
+        set_int(lp,idx,TRUE);
         add_columnex(lp, idx, col, rowno);
     }
 
     set_add_rowmode(lp, TRUE);      
     
     {   // x_v1+x_v2+...+x_vK = 1, v in V
-   
-        for ( int i = 0; i < Ncol; i++ )
-        {   
-            int colno[Mcol+1];
-            double row[Mcol+1];
-            int idx = 0;              
+        for ( int ii = 0; ii < Ncol; ii++ )
+        {
+            int colno[Mcol*Ncol+1];
+            double row[Mcol*Ncol+1];
+            int idx = 0;  
             colno[idx] = idx+1;
-            row[idx] = -Mcol;
-            idx++;               
-            for ( int j = 0; j < Mcol; j++ )
-            {
-                colno[idx] = idx+1;
-                row[idx] = 1;
-                idx++;
+            row[idx] = 0;
+            set_int(lp,idx,TRUE);
+            idx++;  
+            for ( int i = 0; i < Ncol; i++ )
+            {                   
+                for ( int j = 0; j < Mcol; j++ )
+                {
+                    colno[idx] = idx+1;
+                    if ( ii == i )
+                    {
+                        row[idx] = 1;
+                    }
+                    else
+                    {
+                        row[idx] = 0;
+                    }
+                    set_int(lp,idx,TRUE);
+                    idx++;
+                }
             }
             add_constraintex(lp, idx, row, colno, EQ, 1);
-        }    
-        
-        
+        }
     } 
     
    {   // y >= k*x_vk, v in V, k=1...K
-        int colno[Ncol*Mcol*Mcol];
-        double row[Ncol*Mcol*Mcol];
-        int idx = 0;  
-        for ( int i = 0; i < Ncol; i++ )
-        {    
-            colno[idx] = idx+1;
-            row[idx] = -Mcol;
-            idx++;              
-            for ( int j = 0; j < Mcol; j++ )
+        for ( int ii = 0; ii < Ncol; ii++ )
+        {        
+            for ( int jj = 0; jj < Mcol; jj++ )
             {
+                int colno[Ncol*Mcol+1];
+                double row[Ncol*Mcol+1];
+                int idx = 0;  
                 colno[idx] = idx+1;
-                row[idx] = -j-1;
+                row[idx] = -1;
+                set_int(lp,idx,TRUE);
                 idx++;
+                for ( int i = 0; i < Ncol; i++ )
+                {              
+                    for ( int j = 0; j < Mcol; j++ )
+                    {
+                        colno[idx] = idx+1;
+                        if ( ii == i && jj == j )
+                            row[idx] = j+1;
+                        else
+                            row[idx] = 0;
+                        set_int(lp,idx,TRUE);
+                        idx++;
+                    }
+                }
+                add_constraintex(lp, idx, row, colno, LE, 0);     
             }
         }
-        add_constraintex(lp, idx, row, colno, LE, 0);          
     }    
     
     {   // 1 >= x_u,k + x_v,k u,v in E, k=1...K    
@@ -160,19 +181,20 @@ void using_lpsolve ( vector< vector<int> > g )
                 {
                     for (int k = 0; k < Mcol; k++)
                     {                    
-                        int colno[Ncol*Mcol*Mcol];
-                        double row[Ncol*Mcol*Mcol];
-                        int idx = 0;
-                                
+                        int colno[Ncol*Mcol+1];
+                        double row[Ncol*Mcol*+1];
+                        int idx = 0;    
+                        colno[idx] = idx+1;
+                        row[idx] = 0;
+                        set_int(lp,idx,TRUE);
+                        idx++;           
                         for ( int i = 0; i < Ncol; i++ )
-                        {   
-                            colno[idx] = idx+1;
-                            row[idx] = 0;
-                            idx++;                              
+                        {                          
                             for (int j = 0; j < Mcol; j++)
                             {
                                colno[idx] = idx+1;
                                row[idx] = 0;
+                               set_int(lp,idx,TRUE);
                                idx++;
                             }
                         }
@@ -193,7 +215,8 @@ void using_lpsolve ( vector< vector<int> > g )
         double row[1];
         int idx = 0;
         colno[idx] = idx+1;
-        row[idx] = 1;                
+        row[idx] = 1;
+        set_int(lp,idx,TRUE);
         idx++;
         set_obj_fnex(lp, idx, row, colno);
     }      
