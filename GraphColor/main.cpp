@@ -70,6 +70,7 @@ int main ( int argc, char* argv[] )
     
     using_lpsolve(g);
 
+    GraphDisplay(g);
     GraphOutput(g);       
 }
 /*******************************************************************************
@@ -234,8 +235,20 @@ void using_lpsolve ( vector< vector<int> > g )
         {
             double row[Ncol*Mcol];
             get_variables(lp, row);
-            for(int j = 0; j < Ncol; j++)
-              printf("%s: %f\n", get_col_name(lp, j + 1), row[j]);
+            //printf("%s: %f\n", get_col_name(lp, 1), row[0]);
+            int idx = 1;
+            for ( int i = 0; i < Ncol; i++)
+            {
+                for ( int j = 0; j < Mcol ; j++ )
+                {
+                    if ( row[idx] == 1 )
+                    {
+                        cout << "node " << i << " gets color " << j << endl;
+                        //printf("%s: %f\n", get_col_name(lp, idx + 1), row[idx]);
+                    }
+                    idx++;
+                }
+            }
         }
         
     }
@@ -251,47 +264,62 @@ void using_lpsolve ( vector< vector<int> > g )
 vector< vector<int> > GenerateGraph ( int n )
 {
     vector< vector<int> > graph;
-//    random_device rd;
-//    mt19937 rnd(rd());
-//    uniform_int_distribution<int> dist(0,n-1);
-//    
+    random_device rd;
+    mt19937 rnd(rd());
+    uniform_int_distribution<int> dist(0,n-1);
+    
+    for ( vector<int>::size_type i = 0; i < n; i++ )
+    {
+        vector<int> tmp;
+        tmp.push_back(i);
+        for ( vector<int>::size_type j = 0; j < n; j++ )
+        {
+            int pick = dist(rnd);
+            
+            if ( pick != j )
+                tmp.push_back(pick);
+
+        }
+        sort( tmp.begin()+1, tmp.end() );
+        for ( vector<int>::size_type k = 0; k < tmp.size()-1; k++ )
+        {
+            if ( tmp[k]==tmp[k+1] )
+            {
+                tmp.erase(tmp.begin()+k+1);
+                k--;
+            }
+        }
+        
+        graph.push_back(tmp);
+    }
+    for ( vector<int>::size_type i = 1; i < graph.size(); i++ )
+    {
+        int size = graph[i].size();
+        for ( vector<int>::size_type j = 1; j < size; j++ )
+        {
+            //graph[i].push_back(graph[i][j]);
+            //graph[j].push_back(graph[j][i]);            
+        }
+        //sort( graph[i].begin()+1, graph[i].end() );
+    }
+    
 //    for ( vector<int>::size_type i = 0; i < n; i++ )
 //    {
-//        vector<int> tmp;
-//        tmp.push_back(i);
-//        for ( vector<int>::size_type j = 0; j < n; j++ )
+//        graph[i][0] = i;
+//        for ( vector<int>::size_type j = i+1; j < n; j++ )
 //        {
-//            if ( j == i )
-//                continue;
-//            
 //            int pick = dist(rnd);
-//            for ( vector<int>::size_type k = 0; k < tmp.size(); k++ )
+//            if ( pick == i )
 //            {
-//                if ( pick == tmp[k] )
-//                {
-//                    break;
-//                }
-//                else
-//                {
-//                    tmp.push_back(pick);
-//                }
+//                j--;
+//                continue;
 //            }
-//        }
-//        
-//        sort( tmp.begin()+1, tmp.end() );
-//        for ( vector<int>::size_type k = 1; k < tmp.size()-1; k++ )
-//        {
-//            if ( tmp[k]==tmp[k+1] )
-//            {
-//                tmp.erase(tmp.begin()+k+1);
-//                k--;
-//            }
-//        }
-//        
-//        graph.push_back(tmp);
+//            graph[i][j] = pick;
+//            graph[j][i] = pick;
+//        }        
 //    }
     
-    
+    /*
     vector<int> tmp;
     tmp.push_back(0);
     tmp.push_back(1);
@@ -334,7 +362,7 @@ vector< vector<int> > GenerateGraph ( int n )
     tmp5.push_back(3);
     tmp5.push_back(4);    
     graph.push_back(tmp5); 
-    
+    */
     return graph;
 }
 /*******************************************************************************
