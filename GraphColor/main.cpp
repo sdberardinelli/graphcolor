@@ -17,9 +17,9 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
-#include <glpk.h>
 #include <boost/graph/undirected_graph.hpp>
 #include <boost/graph/graphviz.hpp>
+#include <boost/lexical_cast.hpp>
 
 /************************************
  * Namespaces 
@@ -29,19 +29,52 @@ using namespace std;
 /************************************
  * Local Types 
  ************************************/
+//https://github.com/codebrainz/color-names/
 
+
+const char* color_data[] = {
+"aliceblue",      "antiquewhite","antiquewhite1","antiquewhite2","antiquewhite3",
+"antiquewhite4",  "aquamarine","aquamarine1","aquamarine2","aquamarine3",
+"aquamarine4",    "azure","azure1","azure2","azure3",
+"azure4",         "beige","bisque","bisque1","bisque2",
+"bisque3",        "bisque4","black","blanchedalmond","blue",
+"blue1",          "blue2","blue3","blue4","blueviolet",
+"brown",          "brown1","brown2","brown3","brown4",
+"burlywood",      "burlywood1","burlywood2","burlywood3","burlywood4",
+"cadetblue",      "cadetblue1","cadetblue2","cadetblue3","cadetblue4",
+"chartreuse",     "chartreuse1","chartreuse2","chartreuse3","chartreuse4",
+"chocolate",      "chocolate1","chocolate2","chocolate3","chocolate4",
+"coral",          "coral1","coral2","coral3","coral4"
+"cornflowerblue", "cornsilk","cornsilk1","cornsilk2","cornsilk3",
+"cornsilk4",      "crimson","cyan","cyan1","cyan2",
+"cyan3",          "cyan4","darkgoldenrod","darkgoldenrod1","darkgoldenrod2",
+"darkgoldenrod3", "darkgoldenrod4","darkgreen","darkkhaki","darkolivegreen",
+"darkolivegreen1","darkolivegreen2","darkolivegreen3","darkolivegreen4","darkorange",
+"darkorange1","	darkorange2","darkorange3","darkorange4","darkorchid",
+"darkorchid1","	darkorchid2","darkorchid3","darkorchid4","darksalmon",
+"darkseagreen","darkseagreen1","darkseagreen2","darkseagreen3","darkseagreen4",
+"darkslateblue","darkslategray","darkslategray1	darkslategray2	darkslategray3",
+"darkslategray4","darkslategrey","darkturquoise","darkviolet","deeppink",
+"deeppink1","deeppink2","deeppink3","deeppink4","deepskyblue",
+"deepskyblue1","deepskyblue2","deepskyblue3","deepskyblue4","dimgray",
+"dimgrey","dodgerblue","dodgerblue1","dodgerblue2","dodgerblue3",
+"dodgerblue4","	firebrick","firebrick1","firebrick2","firebrick3",
+"firebrick4","floralwhite","forestgreen","gainsboro","ghostwhite",
+"gold","gold1","gold2","gold3","gold4",
+"goldenrod","goldenrod1","goldenrod2","goldenrod3","goldenrod4"
+};
 /************************************
  * Local Variables 
  ************************************/
 
-
 /************************************
  * Local Functions 
  ************************************/
+
 vector< vector<int> > GenerateGraph ( int );
 void GraphDisplay ( vector< vector<int> > );
-void using_lpsolve ( vector< vector<int> > );
-void GraphOutput ( vector< vector<int> > );
+vector<string> using_lpsolve ( vector< vector<int> > );
+void GraphOutput ( vector< vector<int> >, vector<string> );
 
 /*******************************************************************************
 * Function     : 
@@ -66,12 +99,11 @@ int main ( int argc, char* argv[] )
         exit(0);
     }
     
-    vector< vector<int> > g = GenerateGraph(Ncol);    
+    vector< vector<int> > g = GenerateGraph(Ncol);
+    vector<string> colors;
     
-    using_lpsolve(g);
-
-    GraphDisplay(g);
-    GraphOutput(g);       
+    colors = using_lpsolve(g);
+    GraphOutput(g,colors);       
 }
 /*******************************************************************************
 * Function     : 
@@ -80,8 +112,9 @@ int main ( int argc, char* argv[] )
 * Returns      : 
 * Remarks      : 
 ********************************************************************************/
-void using_lpsolve ( vector< vector<int> > g )
+vector<string> using_lpsolve ( vector< vector<int> > g )
 {  
+    vector<string> colors;
     int     Ncol = g.size();
     int     Mcol = g.size();
 
@@ -118,7 +151,6 @@ void using_lpsolve ( vector< vector<int> > g )
             int idx = 0;  
             colno[idx] = idx+1;
             row[idx] = 0;
-            set_int(lp,idx,TRUE);
             idx++;  
             for ( int i = 0; i < Ncol; i++ )
             {                   
@@ -151,7 +183,6 @@ void using_lpsolve ( vector< vector<int> > g )
                 int idx = 0;  
                 colno[idx] = idx+1;
                 row[idx] = -1;
-                set_int(lp,idx,TRUE);
                 idx++;
                 for ( int i = 0; i < Ncol; i++ )
                 {              
@@ -187,7 +218,6 @@ void using_lpsolve ( vector< vector<int> > g )
                         int idx = 0;    
                         colno[idx] = idx+1;
                         row[idx] = 0;
-                        set_int(lp,idx,TRUE);
                         idx++;           
                         for ( int i = 0; i < Ncol; i++ )
                         {                          
@@ -217,12 +247,9 @@ void using_lpsolve ( vector< vector<int> > g )
         int idx = 0;
         colno[idx] = idx+1;
         row[idx] = 1;
-        set_int(lp,idx,TRUE);
         idx++;
         set_obj_fnex(lp, idx, row, colno);
     }      
-    
-    write_LP(lp, stdout);
     
     set_verbose(lp, IMPORTANT);
 
@@ -233,26 +260,34 @@ void using_lpsolve ( vector< vector<int> > g )
         cout << "objective value " << get_objective(lp) << endl;
         
         {
-            double row[Ncol*Mcol];
+            double row[Ncol*Mcol+1];
             get_variables(lp, row);
-            //printf("%s: %f\n", get_col_name(lp, 1), row[0]);
-            int idx = 1;
-            for ( int i = 0; i < Ncol; i++)
+            int idx = 0, i = 0, j = 0;
+            for ( i = 0; i < Ncol; i++ )
             {
-                for ( int j = 0; j < Mcol ; j++ )
+                for ( j = 0; j < Mcol ; j++ )
                 {
                     if ( row[idx] == 1 )
                     {
-                        cout << "node " << i << " gets color " << j << endl;
-                        //printf("%s: %f\n", get_col_name(lp, idx + 1), row[idx]);
+                        cout << "node " << i << " gets color " << color_data[(j*5)%150] << endl;
+                        string str(color_data[(j*5)%150]);
+                        colors.push_back(str);
                     }
                     idx++;
                 }
+            }
+            if ( row[idx] )
+            {
+                cout << "node " << i << " gets color " << color_data[(j*5)%150] << endl;
+                string str(color_data[(j*5)%150]);
+                colors.push_back(str);
             }
         }
         
     }
     delete_lp(lp); 
+    
+    return colors;
 }
 /*******************************************************************************
 * Function     : 
@@ -272,97 +307,43 @@ vector< vector<int> > GenerateGraph ( int n )
     {
         vector<int> tmp;
         tmp.push_back(i);
+        graph.push_back(tmp);
+    }
+    for ( vector<int>::size_type i = 0; i < graph.size(); i++ )
+    {
         for ( vector<int>::size_type j = 0; j < n; j++ )
         {
             int pick = dist(rnd);
+            if ( i == j || pick == j )
+                continue;
             
-            if ( pick != j )
-                tmp.push_back(pick);
+            graph[i].push_back(pick);
+            graph[pick].push_back(i);
 
-        }
-        sort( tmp.begin()+1, tmp.end() );
-        for ( vector<int>::size_type k = 0; k < tmp.size()-1; k++ )
+        }  
+    }
+    
+    for ( vector<int>::size_type i = 0; i < graph.size(); i++ )
+    {
+        for ( vector<int>::size_type k = 1; k < graph[i].size(); k++ )
         {
-            if ( tmp[k]==tmp[k+1] )
+            if ( graph[i][k] == i )
             {
-                tmp.erase(tmp.begin()+k+1);
+                graph[i].erase(graph[i].begin()+k);
                 k--;
             }
         }
         
-        graph.push_back(tmp);
-    }
-    for ( vector<int>::size_type i = 1; i < graph.size(); i++ )
-    {
-        int size = graph[i].size();
-        for ( vector<int>::size_type j = 1; j < size; j++ )
+        sort( graph[i].begin()+1, graph[i].end() );
+        for ( vector<int>::size_type k = 1; k < graph[i].size()-1; k++ )
         {
-            //graph[i].push_back(graph[i][j]);
-            //graph[j].push_back(graph[j][i]);            
-        }
-        //sort( graph[i].begin()+1, graph[i].end() );
+            if ( graph[i][k]==graph[i][k+1] )
+            {
+                graph[i].erase(graph[i].begin()+k+1);
+                k--;
+            }
+        }        
     }
-    
-//    for ( vector<int>::size_type i = 0; i < n; i++ )
-//    {
-//        graph[i][0] = i;
-//        for ( vector<int>::size_type j = i+1; j < n; j++ )
-//        {
-//            int pick = dist(rnd);
-//            if ( pick == i )
-//            {
-//                j--;
-//                continue;
-//            }
-//            graph[i][j] = pick;
-//            graph[j][i] = pick;
-//        }        
-//    }
-    
-    /*
-    vector<int> tmp;
-    tmp.push_back(0);
-    tmp.push_back(1);
-    tmp.push_back(2);
-    tmp.push_back(4);
-    tmp.push_back(5);
-    graph.push_back(tmp);
-    vector<int> tmp1;
-    tmp1.push_back(1);
-    tmp1.push_back(0);
-    tmp1.push_back(2);
-    tmp1.push_back(3);
-    tmp1.push_back(5);    
-    graph.push_back(tmp1);
-    vector<int> tmp2;
-    tmp2.push_back(2);
-    tmp2.push_back(0);
-    tmp2.push_back(1);
-    tmp2.push_back(3);
-    tmp2.push_back(4);    
-    graph.push_back(tmp2);
-    vector<int> tmp3;
-    tmp3.push_back(3);
-    tmp3.push_back(1);
-    tmp3.push_back(2);
-    tmp3.push_back(4);
-    tmp3.push_back(5);    
-    graph.push_back(tmp3);
-    vector<int> tmp4;
-    tmp4.push_back(4);
-    tmp4.push_back(0);
-    tmp4.push_back(2);
-    tmp4.push_back(3);
-    tmp4.push_back(5);    
-    graph.push_back(tmp4);
-    vector<int> tmp5;
-    tmp5.push_back(5);
-    tmp5.push_back(0);
-    tmp5.push_back(1);
-    tmp5.push_back(3);
-    tmp5.push_back(4);    
-    graph.push_back(tmp5); 
-    */
     return graph;
 }
 /*******************************************************************************
@@ -390,7 +371,7 @@ void GraphDisplay ( vector< vector<int> > g )
 * Returns      : 
 * Remarks      : 
 ********************************************************************************/
-void GraphOutput ( vector< vector<int> > graph )
+void GraphOutput ( vector< vector<int> > graph, vector<string> colors )
 {
     ofstream fout("graph.dot");
 
@@ -434,5 +415,27 @@ void GraphOutput ( vector< vector<int> > graph )
     }     
 
     boost::write_graphviz(fout,g);
-    system("dot graph.dot -Tpng -o image.png");
+    fout.close();
+    ifstream dot1("graph.dot");
+    ofstream dot2("graphc.dot");
+    string line,str;
+    stringstream ss;
+    getline(dot1, line);
+    dot2 << line << endl;
+    for ( int i = 0; i < graph.size(); i++ )
+    {
+        getline(dot1, line);
+        unsigned int node = boost::lexical_cast<unsigned int>(line.at(0));
+        ss << node;
+        dot2 << ss.str() << "[color = " << colors[node] << "];" << endl;
+        ss.str("");
+    }
+    while (getline(dot1, line))
+    {
+        dot2 << line << endl;
+    } 
+    dot1.close();
+    dot2.close();
+    
+    system("dot graphc.dot -Tpng -o image.png");
 }

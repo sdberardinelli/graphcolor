@@ -1,0 +1,7 @@
+graph G {
+0[color = antiquewhite4];
+1[color = aquamarine4];
+2[color = aquamarine4];
+0--1 ;
+0--2 ;
+}
