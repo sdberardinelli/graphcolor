@@ -41,7 +41,7 @@
           <commandLine>-fopenmp</commandLine>
         </ccTool>
         <linkerTool>
-          <commandLine>-llpsolve55 -lglpk -lopencv_core -lopencv_highgui</commandLine>
+          <commandLine>-llpsolve55</commandLine>
         </linkerTool>
       </compileType>
       <item path="image.png" ex="false" tool="3" flavor2="0">

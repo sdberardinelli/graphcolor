@@ -20,6 +20,7 @@
 #include <boost/graph/undirected_graph.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/lexical_cast.hpp>
+#include <ctime>
 
 /************************************
  * Namespaces 
@@ -66,6 +67,8 @@ const char* color_data[] = {
 /************************************
  * Local Variables 
  ************************************/
+bool still_running;
+int total_nodes = 3;
 
 /************************************
  * Local Functions 
@@ -85,25 +88,23 @@ void GraphOutput ( vector< vector<int> >, vector<string> );
 ********************************************************************************/
 int main ( int argc, char* argv[] ) 
 {
-    int     Ncol;
-    
-    if ( argc < 2 )
-    {
-        cout << "enter number of nodes" << endl;
-        exit(0);
-    }
-    istringstream ss(argv[1]);
-    if (!(ss >> Ncol))
-    {
-        cerr << "Invalid number " << argv[1] << '\n';    
-        exit(0);
-    }
-    
-    vector< vector<int> > g = GenerateGraph(Ncol);
+    vector< vector<int> > g;
     vector<string> colors;
-    
-    colors = using_lpsolve(g);
-    GraphOutput(g,colors);       
+    still_running = true;
+    do
+    {
+        g = GenerateGraph(total_nodes);
+        
+
+        colors = using_lpsolve(g);
+
+        GraphOutput(g,colors);
+        total_nodes++;
+        for ( int i = 0; i < g.size(); i++ )
+            g[i].clear();
+        g.clear();
+        colors.clear();
+    }while(still_running);
 }
 /*******************************************************************************
 * Function     : 
@@ -255,10 +256,16 @@ vector<string> using_lpsolve ( vector< vector<int> > g )
 
     set_minim(lp);
     
+    cout << "running lp solve" << endl;
+    time_t start = time(0);
     if ( solve(lp) == OPTIMAL )
     {
-        cout << "objective value " << get_objective(lp) << endl;
+        cout << "done lp solve with optimal" << endl;
+        double seconds_since_start = difftime( time(0), start);
         
+        cout << get_objective(lp) << "," << seconds_since_start << "," << total_nodes << endl;
+        
+//        cout << "objective value " << get_objective(lp) << endl;
         {
             double row[Ncol*Mcol+1];
             get_variables(lp, row);
@@ -269,7 +276,7 @@ vector<string> using_lpsolve ( vector< vector<int> > g )
                 {
                     if ( row[idx] == 1 )
                     {
-                        cout << "node " << i << " gets color " << color_data[(j*5)%150] << endl;
+//                        cout << "node " << i << " gets color " << color_data[(j*5)%150] << endl;
                         string str(color_data[(j*5)%150]);
                         colors.push_back(str);
                     }
@@ -278,12 +285,16 @@ vector<string> using_lpsolve ( vector< vector<int> > g )
             }
             if ( row[idx] )
             {
-                cout << "node " << i << " gets color " << color_data[(j*5)%150] << endl;
+//                cout << "node " << i << " gets color " << color_data[(j*5)%150] << endl;
                 string str(color_data[(j*5)%150]);
                 colors.push_back(str);
             }
         }
         
+    }
+    else
+    {
+        cout << "done lp solve without optimal" << endl;
     }
     delete_lp(lp); 
     
